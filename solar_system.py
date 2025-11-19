@@ -151,7 +151,7 @@ def draw_saturn_ring(inner_radius, outer_radius):
 
 
 # ------------------------
-# نمایش متن سه‌بعدی روی صحنه (Label روی سیاره)
+# نمایش متن سه‌بعدی روی صحنه (Label)
 # ------------------------
 def draw_3d_label(text, x, y, z, brightness=1.0):
     glDisable(GL_LIGHTING)
@@ -168,67 +168,13 @@ def draw_3d_label(text, x, y, z, brightness=1.0):
 def main():
     pygame.init()
     glutInit()
-    pygame.font.init()
-
-    # فونت برای پنل اطلاعات
-    title_font = pygame.font.SysFont("Arial", 22, bold=True)
-    info_font = pygame.font.SysFont("Arial", 18)
-
-    # دیکشنری اطلاعات علمی مختصر برای هر سیاره
-    planet_info = {
-        "Mercury": [
-            "Smallest planet in the Solar System",
-            "Year length: 88 Earth days",
-            "No real atmosphere, huge temp swings",
-        ],
-        "Venus": [
-            "Hottest planet due to thick CO2 atmosphere",
-            "Day is longer than its year",
-            "Surface hidden under dense clouds",
-        ],
-        "Earth": [
-            "Only known planet with life",
-            "71% of surface covered by water",
-            "Has one natural satellite: the Moon",
-        ],
-        "Mars": [
-            "Known as the Red Planet",
-            "Has the largest volcano: Olympus Mons",
-            "Thin CO2 atmosphere, polar ice caps",
-        ],
-        "Jupiter": [
-            "Largest planet, a gas giant",
-            "Famous Great Red Spot storm",
-            "Strong magnetic field and many moons",
-        ],
-        "Saturn": [
-            "Famous for its bright ring system",
-            "Gas giant with low density",
-            "More than 80 known moons",
-        ],
-        "Uranus": [
-            "Ice giant with a tilted rotation axis",
-            "Rotates on its side",
-            "Very cold, distant from the Sun",
-        ],
-        "Neptune": [
-            "Farthest major planet from the Sun",
-            "Strong winds and active weather",
-            "Deep blue color from methane",
-        ],
-        "Pluto": [
-            "Dwarf planet in the Kuiper Belt",
-            "Highly elliptical orbit",
-            "Thin atmosphere that freezes and falls as it moves away",
-        ],
-    }
 
     # آنتی‌الیاسینگ
     pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLEBUFFERS, 1)
     pygame.display.gl_set_attribute(pygame.GL_MULTISAMPLESAMPLES, 4)
 
     pygame.display.set_mode((WIDTH, HEIGHT), DOUBLEBUF | OPENGL)
-    pygame.display.set_caption("Cinematic 3D Solar System – Focus with Text & Textures + Moon + Intro")
+    pygame.display.set_caption("Cinematic 3D Solar System – Focus with Textures + Moon + Intro")
 
     # Projection
     glMatrixMode(GL_PROJECTION)
@@ -296,10 +242,10 @@ def main():
         # زمان بر حسب ثانیه
         t = pygame.time.get_ticks() / 1000.0
 
-        # --- Intro fade-in در 2 ثانیه اول ---
+        # --- 3) Intro fade-in در 2 ثانیه اول ---
         intro_factor = min(1.0, t / 2.0)
 
-        # --- پس‌زمینه با نوسان ملایم ---
+        # --- 4) پس‌زمینه با نوسان ملایم ---
         bg = 0.02 + 0.01 * math.sin(t * 0.2)
         glClearColor(0.0, 0.0, bg, 1.0)
 
@@ -360,7 +306,7 @@ def main():
         glRotatef(sun_rotation, 0, 1, 0)
         draw_colored_sphere(sun_color, radius=5.0, slices=100, stacks=100)
 
-        # هاله‌ی خورشید
+        # هاله‌ی خورشید با آلفای وابسته به intro
         glDisable(GL_LIGHTING)
         glEnable(GL_BLEND)
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
@@ -424,9 +370,10 @@ def main():
                 outer = rad * 2.4
                 draw_saturn_ring(inner, outer)
 
-            # سیستم Earth–Moon
+            # --- 2) سیستم Earth–Moon ---
             if name == "Earth":
                 glPushMatrix()
+                # ماه سریع‌تر می‌چرخه
                 moon_angle = angles[i] * 5.0
                 a_m = math.radians(moon_angle)
                 moon_dist = rad * 3.0
@@ -439,48 +386,19 @@ def main():
 
             glPopMatrix()
 
-            # لیبل اسم سیاره بالای خودش
+            # لیبل اسم سیاره (کمی بالاتر) با روشنایی intro
             label_y = y_world + rad + 1.5
             draw_3d_label(name, x_world, label_y, z_world, brightness=intro_factor)
 
             if not paused:
                 angles[i] = (angles[i] + speed) % 360.0
 
-        # آپدیت حرکات
         if not paused:
             sun_rotation = (sun_rotation + 0.3) % 360.0
             if focus_mode:
                 camera_focus_angle = (camera_focus_angle + camera_speed_focus) % 360.0
             else:
                 camera_angle_global = (camera_angle_global + camera_speed_global) % 360.0
-
-        # ---------- پنل اطلاعات علمی در حالت فوکوس ----------
-        if focus_mode:
-            surface = pygame.display.get_surface()
-
-            panel_width = 360
-            panel_height = 200
-            panel_rect = pygame.Rect(WIDTH - panel_width - 20, 40, panel_width, panel_height)
-
-            # پس‌زمینه نیمه‌شفاف پنل
-            panel = pygame.Surface(panel_rect.size, pygame.SRCALPHA)
-            panel.fill((0, 0, 0, 170))
-            surface.blit(panel, panel_rect.topleft)
-
-            # اسم سیاره و خطوط توضیح
-            name = planets[focus_target][0]
-            lines = planet_info.get(name, [])
-
-            # عنوان
-            title_surf = title_font.render(name, True, (255, 255, 255))
-            surface.blit(title_surf, (panel_rect.x + 15, panel_rect.y + 10))
-
-            # خطوط
-            y_text = panel_rect.y + 45
-            for line in lines:
-                text_surf = info_font.render("• " + line, True, (220, 220, 220))
-                surface.blit(text_surf, (panel_rect.x + 15, y_text))
-                y_text += 24
 
         pygame.display.flip()
         clock.tick(60)
